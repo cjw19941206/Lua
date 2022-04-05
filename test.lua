@@ -1,6 +1,11 @@
-package.cpath = package.cpath .. ';C:/Users/85354/AppData/Roaming/JetBrains/IdeaIC2021.3/plugins/EmmyLua/debugger/emmy/windows/x64/?.dll'
-local dbg = require('emmy_core')
-dbg.tcpListen('localhost', 9966)
+local var = {1, 2}
+b = 10
 
-sdf
+function hello (name)
+    print("hello", name)
+end
+
 print("hello")
+
+hello("cjw")
+
