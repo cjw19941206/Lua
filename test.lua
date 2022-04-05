@@ -2,4 +2,5 @@ package.cpath = package.cpath .. ';C:/Users/85354/AppData/Roaming/JetBrains/Idea
 local dbg = require('emmy_core')
 dbg.tcpListen('localhost', 9966)
 
+sdf
 print("hello")
