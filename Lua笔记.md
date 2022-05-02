@@ -241,17 +241,255 @@ print(page)
 
 >   表  Table 是 Lua 语言中**唯一**的数据结构
 
+table的索引可以是 数值，也可以是 字符串 或者其他任意类型的值（Nil除外）
+
+table永远是匿名的，程序只能操作指向table的**引用**，当一个table没有指向它的引用时，gc会最终删除这个表和释放其内存
+
+### 5.1 table的增删改查
 
 
-### 5.1 table的操作
+
+```lua
+t = {[1]="a", ["a"] = 1}
+t[2] = "b"
+t["b"] = 2
+print(t[1], t[2])
+print(t["a"], t.b)
+t[1] = "A"
+t.a = "一"
+print(t[1], t[2])
+print(t["a"], t.b)
+t[2] = nil
+t["b"] = nil
+print(t[1], t[2])
+print(t["a"], t.b)
+
+---OUTPUT---
+a	b
+1	2
+A	b
+一	2
+A	nil
+一	nil
+```
 
 
+
+### 5.2 table的索引
+
+-   同一个表可以有不同类型的索引
+
+-   `t.name` 和 `t["name"]` 等价，和 `t[name]` 不等价
+
+-   当浮点数被用作table的索引时，只要能转换成整数型，就会被转换成整数型作为索引
+
+    ```lua
+    t = {}
+    t[2.0] = 10
+    t[2.1] = 20
+    print(t[2])
+    print(t[2.0])
+    print(t[2.1])
+    
+    ---OUTPUT---
+    10
+    10
+    20
+    ```
+
+
+
+### 5.3 table的构造器
+
+-   **普通构造器**：`t = {[1] = "a", [2] = "b", ["a"] = 1, ["b"] = 2}`
+-   **列表式构造器**：`t = {"a", "b"}`
+-   **记录式构造器**：`t = {a = 1, b = 2}`
+
+
+
+### 5.4 数组和序列
+
+数组：索引只有整数型的table
+
+序列：所有元素不为nil的数组
+
+操作符`#`：返回字符串的**字节数**；返回**序列**的长度，对于中间有nil或空洞的数组，`#`操作是**不靠谱的**
+
+```lua
+t = {"a"}
+print(#t)
+t[2] = "b"
+print(#t)
+t[3] = nil
+print(#t)
+t[4] = "d"
+print(#t)
+t[5] = nil
+print(#t)
+--t[2.1] = nil
+--print(#t)
+--t["a"] = 1
+--print(#t)
+t[6] = "f"
+print(#t)
+--t[-1] = "A"
+--print(#t)
+for k, v in pairs(t) do
+    print(k, v)
+end
+
+---OUTPUT---
+1
+2
+2
+4
+4
+4
+1	a
+2	b
+4	d
+6	f
+```
+
+### 5.5 table的遍历
+
+-   `pairs`：遍历所有的非nil键值对，但是每次遍历的顺序可能不同
+-   `ipairs`：遍历列表，每次保证按照顺序进行
+
+**TODO：需要看实现的源码**
+
+
+
+### 5.6 table的安全访问
+
+当不能确定某个table是否存在时，我们尝试访问它的某个key，往往需要使用如下形式：
+
+```lua
+if t and t.x then
+    -- 逻辑 --
+end
+```
+
+但是这种方式当嵌套深度比较深时往往比较低效，例如：
+
+```lua
+zip = company 
+	  and company.director
+	  and company.director.address
+	  and company.director.address.zipcode
+```
+
+此时成功访问会对表进行6次访问而不是3次，因此在Lua中可以使用如下形式：
+
+```lua
+zip = (((company or {}).director or {}).address or {}).zipcode
+```
 
 
 
 ## 6 function
 
+>   函数定义形如：`function f(args) -- 函数体 -- end`
+>
+>   调用函数时形如：`f()`
+>
+>   -   当 **只有一个参数** 并且该参数是 **字符串常量或者表构造器** 时，可以省略括号
+>   -   调用函数时参数个数可以和定义函数时不一致，多的丢弃，少的设为nil
 
+
+
+### 6.1 多返回值
+
+Lua中函数返回多个返回值形如：
+
+```lua
+function f() 
+	return val1, val2
+end
+```
+
+但是Lua会根据**函数被调用的情况**调整返回值的个数：
+
+-   0个返回值：函数被作为一条单独的语句调用时，丢弃所有返回值
+-   1个返回值：**当函数没有返回值时，强行返回nil**
+    1.   函数被作为表达式（例如`+`或者`..`的操作数）调用时
+    2.   函数调用在**一系列表达式**中，但是不**是最后一个表达式**
+    3.   用`()`括住函数调用时
+-   多个返回值：函数调用在**一系列表达式**中，并且**是最后一个表达式**，一系列表达式包括下面4种情况：
+    1.   多重赋值
+    2.   函数调用时传入的实参
+    3.   表构造器
+    4.   `return`语句
+
+
+
+### 6.2 可变长参数
+
+>   Lua 中使用三个点 `...` 来表示**可变长参数**，这些所有的参数也成为 **额外参数**
+
+传入时：`...` 必须放在参数列表最后
+
+使用时：该表达式`...`返回的是当前函数的所有可变长参数(类似于多个返回值)
+
+-   `{...}`：返回所有可变长参数组成的列表
+-   `table.pack(...)`：和`{...}`一样，但同时返回的表中还保存了额外字段`n`表示额外参数的总个数。与之相对应的是函数`table.unpack(list, i, j)`，返回列表list中索引 i(`i = i or 1`) 到 j(`j = j or #list`) 之间的元素
+-   `select(selector, ...)`：selector是数值n，返回第n个参数及之后的所有参数；selector是`"#"`，返回额外参数的总个数
+
+```lua
+local function checkNils(...)
+    print(#{...})
+    for k, v in pairs({...}) do
+        print(k, v)
+    end
+
+    local variableArgs = table.pack(...)
+    for k, v in pairs(variableArgs) do
+        print(k, v)
+    end
+    for i = 1, variableArgs.n do
+        print(i, variableArgs[i])
+    end
+
+    print(select(1, ...))
+    print(select(2, ...))
+    print(select("#", ...))
+
+
+    local a, b, c = ..., "hello"
+    print(a, b, c)
+    local x, y, z = "world", ...
+    print(x, y, z)
+end
+checkNils(1, nil, 3, nil)
+
+--[[
+OUTPUT:
+1
+1	1
+3	3
+1	1
+3	3
+n	4
+1	1
+2	nil
+3	3
+4	nil
+1	nil	3	nil
+nil	3	nil
+4
+1	hello	nil
+world	1	nil
+--]]
+
+```
+
+### 6.3 正确的尾调用
+
+>   **尾调用** 指的是当一个函数的最后一个动作是调用另一个函数，而没有再进行任何其他工作时，就形成了尾调用
+
+因为尾调用之后，调用函数不再执行任何工作，因此不需要在调用栈中保存调用函数的任何信息。所以可以直接在调用函数的栈空间中执行被调用函数（猜的），不需要开辟新的栈空间，即 **尾调用消除**。在这种机制下，可以嵌套的尾调用的数量是无限的，即不会发生栈空间溢出（stackflow）的情况。
+
+在Lua中，只有形如 `return func(args)` 的才是尾调用。
 
 ## 7 userdata
 
@@ -285,9 +523,11 @@ print(page)
 
 
 
-## 字符串标准库
+## 字符串标准库string
 
 
 
 
+
+## 表标准库table
 
