@@ -1,6 +1,7 @@
 #!C:\Program Files\Lua\5.3.6\bin\lua
 
-print(hello)
+local inspect = require("inspect")
+
 funcs = {
     ["tableCtor"]
     =
@@ -97,18 +98,39 @@ funcs = {
             print(a, b, c)
             local x, y, z = "world", ...
             print(x, y, z)
-            table.unpack()
         end
         checkNils(1, nil, 3, nil)
+    end,
+
+    ["controlRules"]
+    =
+    function()
+        ----local i = 0
+        --
+        --if i == 0 then
+        --    print(i)
+        --elseif i == 1 then
+        --    print(i + 1)
+        --else
+        --    print(i - 1)
+        --end
+        local i = 0
+        while not nilVar do
+            local nilVar = "local nilVar"
+            print(nilVar)
+        end
+
+        local x = 10
+        local sqr = x / 2
+        repeat
+            sqr = (sqr + x / sqr) / 2
+            local error = math.abs(sqr ^ 2 - x)
+        until error < x / 1000
     end
+
 }
 
-
-
-
-
-
-
+print(inspect(_G))
 
 
 for funcName, func in pairs(funcs) do

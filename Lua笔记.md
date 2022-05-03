@@ -26,13 +26,23 @@ Lua的**保留字**：![image-20220428001510411](./pics/image-20220428001510411.
 
 
 
-## 3 全局变量
+## 3 变量
 
-只要是没有声明为local的变量都默认是全局变量，且**全局变量无需声明就可以使用**，不过值为`nil`。
+**全局变量**：
 
-Lua不会区分未初始化的变量和值为nil的变量，当一个变量为nil后，Lua会最终回收该变量占用的内存
+-   只要是没有声明为local的变量都默认是全局变量，且**全局变量无需声明就可以使用**，不过值为`nil`。
+
+-   Lua不会区分未初始化的变量和值为nil的变量，当一个变量为nil后，Lua会最终回收该变量占用的内存
+-   全局变量存储在`_G`这个table中
 
 
+
+**局部变量**：
+
+-   局部变量在使用前必须先声明`local var`
+-   局部变量的作用域和生命周期有限，作用域终止于声明变量的代码块中的**最后一个有效语句处**（goto的标签是无效语句）
+-   可以通过`do ... end`控制局部变量的生效范围
+-   局部变量的访问速度更快，应该优先使用局部变量，例如常用`local math_random = math.random`来提高访问速度
 
 
 
@@ -57,6 +67,106 @@ Lua不会区分未初始化的变量和值为nil的变量，当一个变量为ni
 ![image-20220428004607798](./pics/image-20220428004607798.png)
 
 
+
+## 6 控制结构
+
+### 6.1 if-then-elseif-else
+
+>   Lua不支持switch语句
+
+```lua
+if i == 0 then
+    print(i)
+elseif i == 1 then
+    print(i + 1)
+else
+    print(i - 1)
+end
+```
+
+
+
+### 6.2 while-do
+
+```lua
+while i == 0 do
+    i = i + 1
+    print(i)
+end
+```
+
+
+
+### 6.3 repeat-until
+
+>   until中的测试条件能够访问循环体中声明的局部变量
+
+```lua
+local x = 10
+local sqr = x / 2
+repeat
+    sqr = (sqr + x / sqr) / 2
+    local error = math.abs(sqr ^ 2 - x)
+until error < x / 1000
+```
+
+
+
+### 6.4 for-do
+
+ for分为数值型for和泛型for
+
+-   数值型for ：循环开始前，三个表达式都运行一次；控制变量`var`是for语句自动声明的局部变量
+
+    ```lua
+    for var = startExpr, endExpr, stepExpr do
+    	--something--
+    end
+    ```
+
+-    泛型for（TODO）：形如
+
+    ```lua
+    for k, v in pairs(t) do
+        --something--
+    end
+    ```
+
+    
+
+### 6.5 break、return 和 goto
+
+-   break：结束最内层的循环
+
+-   return：只能是**代码块的最后一句**
+
+    ```lua
+    function foo()
+        return   --<< 语法错误
+        do return end  -- OK
+        --something--
+    end
+    ```
+
+-   goto：跳转至对应的标签处继续执行，正确使用goto可以实现Lua中没有的一些功能，例如continue, redo等
+
+    ```lua
+    while some_condition do
+        ::redo::
+        
+        if some_other_condition then
+            goto continue
+        else
+            goto redo
+        end
+        
+        --something--
+        
+        ::continue::
+    end
+    ```
+
+    
 
 
 
@@ -491,6 +601,12 @@ world	1	nil
 
 在Lua中，只有形如 `return func(args)` 的才是尾调用。
 
+
+
+
+
+
+
 ## 7 userdata
 
 
@@ -530,4 +646,10 @@ world	1	nil
 
 
 ## 表标准库table
+
+
+
+
+
+## 输入输出库io
 
