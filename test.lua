@@ -154,14 +154,41 @@ funcs = {
         end
         dofile("./data.lua")
         print(count)
-    end
+    end,
+
+    --["load"]
+    --=
+    --function()
+    --    print("enter your expression: ")
+    --    local line = io.read()
+    --    local func = assert(load("return " .. line))
+    --    print("the value of your expression is " .. func())
+    --end,
+
+    --["error"]
+    --=
+    --function()
+    --    error("hello")
+    --    print("world")
+    --end
 }
 
-print(inspect(_G))
-
-
-for funcName, func in pairs(funcs) do
-    print("----------------[" .. funcName .. "]----------------")
-    func()
-    print("----------------[" .. funcName .. "]----------------\n")
+function f2()
+    error("error in f2", 2)
 end
+
+function f1()
+    return f2()
+end
+
+local ok, msg = pcall(f1)
+print("==========pcall==========\n" .. msg .. "\n==========pcall==========\n")
+
+local ok, msg = xpcall(f1, function(x) return tostring(x+ 1) end, 1)
+print("==========xpcall==========\n" .. msg .. "\n==========xpcall==========\n")
+
+--for funcName, func in pairs(funcs) do
+--    print("----------------[" .. funcName .. "]----------------")
+--    func()
+--    print("----------------[" .. funcName .. "]----------------\n")
+--end

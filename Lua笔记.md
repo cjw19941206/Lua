@@ -802,7 +802,7 @@ for line in io.lines() do
     buff[#buff + 1] = line
 end
 buff[#buff + 1] = ""
-local s = table.concat(buff, "\")
+local s = table.concat(buff, "\n")
 ```
 
 
@@ -811,9 +811,153 @@ local s = table.concat(buff, "\")
 
 # 四、编译、执行和错误
 
+>   Lua虽然作为**解释型语言**，但是在运行代码之前Lua总是会对源码进行**预编译**生成中间代码
+
+## 1 编译
+
+>   主要介绍`loadfile`、`dofile`和`load`三个函数
+
+-   loadfile：
+
+    -   从文件中加载Lua代码进行编译，然后将编译后的代码段作为一个**匿名函数**返回，**不会执行代码**
+    -   编译出错时只返回**nil**和**错误信息**而不会抛出异常
+
+-   dofile：
+
+    -   编译代码并执行
+    -   编译失败会抛出异常，可以认为是：
+
+    ```lua
+    function dofile(filename)
+        local f = assert(loadfile(filename))
+        return f()
+    end
+    ```
+
+-   load：
+
+    -   和loadfile类似，不过是编译一个字符串或者函数，将它们作为**匿名可变长参数函数的函数体**，所以`load("a = 1")`与下面表达式等价：
+
+        ```lua
+        function (...) a = 1 end
+        ```
+
+    -   并且是在全局变量中进行编译，该字符串不遵守词法定界，因此不能访问上值
+
+        ```lua
+        i = 100
+        local i = 1
+        f = load("i = i + 1; print(i)")
+        g = function() i = i + 1; print(i) end
+        f()  --> 101
+        g()  --> 2
+        ```
+
+    -   通常用于执行外部代码：
+
+        ```lua
+        print("enter your expression: ")
+        local line = io.read()
+        local func = assert(load("return " .. line))
+        print("the value of your expression is " .. func())
+        ```
 
 
 
+**注意**：Lua语言中函数定义实际上是一种对变量（函数名）的赋值操作，发生在运行时而不是编译时。编译时只完成了对应的匿名函数代码段的编译，并没有对函数名和该匿名函数的地址进行映射（赋值）。
+
+![image-20220504233741104](pics/image-20220504233741104.png)
+
+
+
+
+
+## 2 预编译的代码
+
+>   luac.exe 用于执行预编译生成预编译文件（二进制）
+
+-   `luac -o test.lc test.lua`：将test.lua生成对应的预编译文件test.lc
+-   Lua解释器能够像执行普通lua代码一样执行预编译文件
+-   loadfile和load也接受预编译代码
+-   `luac -l test.lua`能够列出编译器为指定代码段生成的操作码
+
+
+
+## 3 错误
+
+### 3.1 引发错误
+
+>   引发错误主要有 `error` 和 `assert` 两个函数
+
+-   `error(errObject, level)`：传入错误对象errObject作为参数并引发一个错误，level用于说明错误发生在函数调用的第几层，第1层是调用error的函数，在打印错误信息时会有不同的定位，但是栈回溯信息是相同的
+-   `assert(errExpr, errObject)`：如果errExpr为真，就返回errExpr；否则引发一个错误，错误信息为errObject
+
+
+
+### 3.2 错误捕捉和处理
+
+>   想在Lua中捕捉和处理错误，需要通过函数`pcall`或者`xpcall`来封装代码，常用`xpcall`
+
+```lua
+local ok, err = pcall(function()
+    --something--
+    if errOccur then
+    	error("error occur")
+    end
+    --something--
+    end)
+
+if ok then
+    --regular code--
+else
+    --error handling code--
+end
+```
+
+函数`pcall`会以**保护模式**调用第一个参数，并捕获该函数执行时的错误，它本身不会引发任何错误
+
+-   如果没有错误发生：返回 **true** 和 **被调用函数的所有返回值**
+
+-   如果有错误发生：返回 **false** 和 **错误对象**，之所以是错误对象而不是错误信息，是因为函数 `pcall` 能够返回传递给函数 `error` 的任何类型的值
+
+    ```lua
+    local ok , err = pcall(function() error({code = 121}) end)
+    print(err.code) --> 121
+    ```
+
+    
+
+
+
+### 3.3 错误信息和栈回溯
+
+当遇到内部错误时，例如对nil进行索引，Lua语言会负责生成错误对象（这种情况下都是字符串形式的错误信息），并打印出栈回溯信息。
+
+为了使得错误信息更精准的定位，函数`error`有第二个参数level，说明错误发生在函数调用的第几层（第1层是函数自己）。
+
+当函数`pcall`返回时，部分调用栈（从pcall到错误发生处）已被破坏，因此往往更常使用`xpcall(f, msgh)`来实现错误捕捉。xpcall能够在栈展开前调用错误处理函数`mgsh`，以便使用调试库获取更多的错误信息。
+
+下面是一些实例：
+
+**pcall和xpcall**：
+
+![image-20220505010222993](pics/image-20220505010222993.png)
+
+
+
+**error中的参数level不同时**：
+
+![image-20220505010222993](pics/image-20220505010222993.png)
+
+![image-20220505010327889](pics/image-20220505010327889.png)
+
+
+
+**有无尾调用时**：
+
+![image-20220505010509666](pics/image-20220505010509666.png)
+
+![image-20220505010327889](pics/image-20220505010327889.png)
 
 
 
