@@ -114,11 +114,7 @@ funcs = {
         --else
         --    print(i - 1)
         --end
-        local i = 0
-        while not nilVar do
-            local nilVar = "local nilVar"
-            print(nilVar)
-        end
+
 
         local x = 10
         local sqr = x / 2
@@ -126,8 +122,39 @@ funcs = {
             sqr = (sqr + x / sqr) / 2
             local error = math.abs(sqr ^ 2 - x)
         until error < x / 1000
-    end
+    end,
 
+    ["funcClosePackage"]
+    =
+    function()
+        function newCounter()
+            local x = 0
+            return function()
+                x = x + 1
+                return x
+            end
+        end
+
+        local c1 = newCounter()
+        local c2 = newCounter()
+        print(c1())
+        print(c1())
+        print(c2())
+        print(c1())
+        print(c2())
+    end,
+
+    ["dataDesc"]
+    =
+    function()
+        local count = 0
+        function Entry()
+            count = count + 1
+
+        end
+        dofile("./data.lua")
+        print(count)
+    end
 }
 
 print(inspect(_G))

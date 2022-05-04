@@ -223,6 +223,8 @@ boolean类型有两个值：true和false
 
 ### 3.2 算术运算
 
+>   Lua5.3中引入了位运算
+
 ```lua
 1 + 1 --> 	2
 1.0 + 1.0 --> 	2.0
@@ -605,6 +607,83 @@ world	1	nil
 
 ### 6.4 闭包
 
+>   Lua中，函数是严格遵循**词法定界**的**第一类值**
+
+**第一类值**：意味着Lua中的函数和其他类型的值（数值和字符串）具有同等权限
+
+**词法定界**：意味着Lua中的函数可以访问包含其自身的外部函数中的变量
+
+
+
+#### 6.4.1 函数是第一类值
+
+函数和数值和字符串一样，都是第一类值，例如下面两种方式是等价的：
+
+```lua
+function foo(x) return x * 2 end
+foo = function(x) return x * 2 end
+```
+
+并且**函数都是匿名**的，上面第一种方式只是一种语法糖，把变量`foo`赋值为匿名函数`function(x) return x * 2 end`。
+
+同时函数还能够被存储在**表字段**和**局部变量**中：
+
+-   表字段：
+
+    ```lua
+    --1--
+    Lib = {}
+    Lib.foo = function(x) return x + 1 end
+    
+    --2--
+    Lib = {foo = function(x) return x + 1 end}
+    
+    --3--
+    Lib = {}
+    function Lib.foo(x) return x + 1 end 
+    ```
+
+-   局部变量：Lua语言将每个程序段（chunk）都作为一个匿名函数处理，所以在一个程序段中声明的局部函数只在该程序段中可见
+
+    ```lua
+    --1--
+    local function foo(x) return x + 1 end
+    
+    --2--
+    local foo = function(x) return x + 1 end
+    
+    --3-- 定义局部递归函数时使用
+    local foo; foo = function(x) return x + 1 end
+    ```
+
+    
+
+#### 6.4.2 词法定界
+
+当函数B包含函数A时，函数A可以访问包含其的函数B的所有局部变量，即**词法定界**。
+
+当函数A中访问函数B中的局部变量时，该变量对于A来说既不是全局变量也不是局部变量，而是**上值**（up-value）或非局部变量。
+
+**闭包**就是一个函数加能够使该函数正确访问非局部变量所需的其他机制
+
+```lua
+function newCounter() 
+    local x = 0
+    return function() 
+        x = x + 1
+        return x
+    end
+end
+
+local c1 = newCounter()
+local c2 = newCounter()
+print(c1())  --> 1
+print(c1())  --> 2
+print(c2())  --> 1
+print(c1())  --> 3
+print(c2())  --> 2
+```
+
 
 
 ## 7 userdata
@@ -627,7 +706,104 @@ world	1	nil
 
 # 三、数据结构
 
+>   table作为Lua中唯一的数据结构，可以用来实现其他各种常用数据结构，例如数组、记录、列表、队列、集合等
 
+**数组**：Lua中默认索引从 1 开始
+
+```lua
+local a = {}
+for i = 1, 1000 do
+    a[i] = 0
+end
+```
+
+
+
+**多维数组**：
+
+```lua
+local mt = {}
+for i = 1, N do
+    mt[i] = {}
+    for j = 1, M do
+        mt[i][j] = 0
+    end
+end
+```
+
+
+
+**链表**：
+
+```lua
+--头插法--
+list = nil
+list = {next = list, value = "value"}
+
+--遍历--
+local l = list
+while l do
+    print(l.value)
+    l = l.next
+end
+```
+
+
+
+**双端队列**：
+
+![image-20220504204322780](pics/image-20220504204322780.png)
+
+![image-20220504204345670](pics/image-20220504204345670.png)
+
+
+
+**反向表**：在Lua中，很少用到搜索的操作，因为可以使用**反向表**或**索引表**的数据结构，可以直接找出索引
+
+```lua
+days = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thurday", "Friday", "Saturday"}
+
+revDays = {}
+for k, v in pairs(days) do
+    revDays[v] = k
+end
+```
+
+
+
+**集合**：
+
+```lua
+--不可重复的集合--
+uniqueSet = {["while"] = true, ["for"] = true}
+
+--可重复的集合--
+Set = {["while"] = 2, ["for"] = 1}
+```
+
+
+
+**字符串缓冲区**：  逐行读取文件时，可以利用table把每一行存起来，最后再利用table.concat把每一行连接起来
+
+```lua
+--[[
+下面是低效的做法，因为每次都会生成临时的字符串
+]]
+local buff = ""
+for line in io.lines() do
+    buff = buff .. line .. "\n"
+end
+
+--[[
+利用table作为字符串缓冲区
+]]
+local buff = {}
+for line in io.lines() do
+    buff[#buff + 1] = line
+end
+buff[#buff + 1] = ""
+local s = table.concat(buff, "\")
+```
 
 
 
@@ -711,6 +887,10 @@ world	1	nil
 
 
 
+### 模式匹配
+
+
+
 
 
 ## 表标准库table
@@ -720,4 +900,12 @@ world	1	nil
 
 
 ## 输入输出库io
+
+
+
+
+
+## 系统库os
+
+### 时间和日期
 
