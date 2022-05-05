@@ -963,7 +963,75 @@ end
 
 # 五、模块和包
 
+>   Lua中可以通过`require`加载一个模块（module），创建并返回一个table，所有的标准库就是模块；包（package）是模块的集合。
 
+## 1 require函数
+
+require函数用于加载一个模块（**保证只加载一次**），返回一个table，其中包含了各种函数（例如package.loadlib）以及成员（例如package.path)，其过程如下：
+
+-   首先检查表`package.loaded`中该模块是否已经被加载。如果已经被加载，就返回对应的值`package.loaded[modname]`；如果没有被加载，就在设置好的路径中搜索该模块modname
+-   先搜索`package.path`中的Lua文件，如果找到就调用`loadfile`加载；否则就搜索`package.cpath`中对应的C标准库，找到后调用`package.loadlib`进行加载，该函数会查找名为`luaopen_modname`的函数
+-   加载完成后会将返回的结果保存在表`package.loaded`中
+
+
+
+### 1.1 模块重命名
+
+![image-20220505234505059](pics/image-20220505234505059.png)
+
+
+
+### 1.2 搜索路径
+
+Lua中的搜索路径是一组模板，require会将每一个模板中的`?`用模块名`modname`替换然后进行搜索。
+
+![image-20220505235737051](pics/image-20220505235737051.png)
+
+当package模块被初始化后，它就把变量`package.path`设置为环境变量 `LUA_PATH_5_3`或者`LUA_PATH`的值。如果这两个环境变量都没有，Lua则会使用编译时定义的默认路径。并且在使用环境变量时会将环境变量中的所有`;;`替换成默认路径。例如如果`LUA_PATH_5_3`是"mydir/?.lua;;"，那么最终的路径就是"mydir/?.lua"后跟默认路径。
+
+同理在使用`package.cpath`时 也会进行类似操作。
+
+对模块的搜索是由`package.searchpath`完成的，它要么返回第一个存在的文件的文件名，要么返回nil和所有文件都无法打开的错误信息，如下：
+
+![image-20220505235949328](pics/image-20220505235949328.png)
+
+
+
+### 1.3 搜索器
+
+![image-20220506000552945](pics/image-20220506000552945.png)
+
+
+
+## 2 编写模块
+
+```lua
+myTable = {}
+function myTable.concat(list, sep, i, j) end
+function myTable.insert(list, pos, value) end
+function myTable.move(a1, f, e, t, a2) end
+function myTable.pack(...) end
+function myTable.remove(list, pos) end
+function myTable.sort(list, comp) end
+function table.unpack(list, i, j) end
+
+return table
+```
+
+
+
+## 3 子模块
+
+当`require("mod.sub")`时，sub是mod的一个子模块
+
+-   当查询`package.loaded`和`package.preload`时，会使用原始的模块名`mod.sub`
+-   当搜索对应的文件名时，会将`mod.sub`中的`.`转换为操作系统的目录分隔符（不同操作系统不同）
+
+
+
+补充说明：
+
+![image-20220506001912724](pics/image-20220506001912724.png)
 
 
 

@@ -150,27 +150,48 @@ funcs = {
         local count = 0
         function Entry()
             count = count + 1
-
         end
         dofile("./data.lua")
         print(count)
     end,
 
-    --["load"]
-    --=
-    --function()
-    --    print("enter your expression: ")
-    --    local line = io.read()
-    --    local func = assert(load("return " .. line))
-    --    print("the value of your expression is " .. func())
-    --end,
+    ["load"]
+    =
+    function()
+        print("enter your expression: ")
+        local line = io.read()
+        local func = assert(load("return " .. line))
+        print("the value of your expression is " .. func())
+    end,
 
-    --["error"]
-    --=
-    --function()
-    --    error("hello")
-    --    print("world")
-    --end
+    ["errorHandler"]
+    =
+    function()
+        function f2()
+            error("error in f2", 2)
+        end
+
+        function f1()
+            return f2()
+        end
+        math = require("math")
+        math.sin(1)
+        local ok, msg = pcall(f1)
+        print("==========pcall==========\n" .. msg .. "\n==========pcall==========\n")
+
+        local ok, msg = xpcall(f1, function(x) return tostring(x+ 1) end, 1)
+        print("==========xpcall==========\n" .. msg .. "\n==========xpcall==========\n")
+    end,
+
+    ["package"]
+    =
+    function()
+        print(package.path)
+        print(package.cpath)
+
+    end
+
+
 }
 
 function f2()
@@ -180,15 +201,16 @@ end
 function f1()
     return f2()
 end
-
+math = require("math")
+math.sin(1)
 local ok, msg = pcall(f1)
 print("==========pcall==========\n" .. msg .. "\n==========pcall==========\n")
 
 local ok, msg = xpcall(f1, function(x) return tostring(x+ 1) end, 1)
 print("==========xpcall==========\n" .. msg .. "\n==========xpcall==========\n")
 
---for funcName, func in pairs(funcs) do
---    print("----------------[" .. funcName .. "]----------------")
---    func()
---    print("----------------[" .. funcName .. "]----------------\n")
---end
+for funcName, func in pairs(funcs) do
+    print("----------------[" .. funcName .. "]----------------")
+    func()
+    print("----------------[" .. funcName .. "]----------------\n")
+end
