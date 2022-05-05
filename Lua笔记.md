@@ -1013,9 +1013,9 @@ function myTable.move(a1, f, e, t, a2) end
 function myTable.pack(...) end
 function myTable.remove(list, pos) end
 function myTable.sort(list, comp) end
-function table.unpack(list, i, j) end
+function myTable.unpack(list, i, j) end
 
-return table
+return myTable
 ```
 
 
